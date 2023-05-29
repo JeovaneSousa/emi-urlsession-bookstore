@@ -38,7 +38,15 @@ class AutorViewController: UITableViewController {
     
     private func carregaLivrosDoAutor() {
         guard let livrosAPI = livrosAPI else { return }
-        livrosDoAutor = livrosAPI.carregaLivros(por: autor)
+        
+        livrosAPI.getBooks(by: autor) { [weak self] books in
+            self?.livrosDoAutor = books
+            
+        } failureHandler: { error in
+            guard let description = error.errorDescription else {return}
+            
+            UIAlertController.showError(description, in: self)
+        }
     }
     
 }

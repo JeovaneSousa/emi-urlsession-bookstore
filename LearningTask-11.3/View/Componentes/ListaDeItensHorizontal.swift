@@ -195,7 +195,6 @@ fileprivate class ItemViewCell: UICollectionViewCell {
             label.centerYAnchor.constraint(equalTo: self.centerYAnchor),
         ])
     }
-    
     fileprivate static func calculateMinCellSize(for label: String, in parent: UIView) -> CGSize? {
         let horizontalPadddingSize: CGFloat = 16
         let fontAttributes = [NSAttributedString.Key.font: ItemViewCell.font]
@@ -214,4 +213,6 @@ fileprivate class ItemViewCell: UICollectionViewCell {
     }
     
 }
+
+
 

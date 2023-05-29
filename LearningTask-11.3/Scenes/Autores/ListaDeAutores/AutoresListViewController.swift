@@ -14,12 +14,13 @@ class AutoresListViewController: UITableViewController {
         case verFormNovoAutor = "verFormNovoAutorSegue"
     }
 
+        
     var autorAPI: AutoresAPI?
     var livrosAPI: LivrosAPI?
     
     var autores: [Autor] = [] {
         didSet {
-            tableView.reloadData()
+            self.tableView.reloadData()
         }
     }
     
@@ -40,7 +41,17 @@ class AutoresListViewController: UITableViewController {
     
     private func carregaAutores() {
         guard let autorAPI = autorAPI else { return }
-        self.autores = autorAPI.listaTodos()
+        
+        autorAPI.getAll(fromUrl: autorAPI.uri) {[weak self] response in
+            
+            self?.autores = response
+            
+        } failureHandler: { error in
+            guard let description = error.errorDescription else {return}
+
+            UIAlertController.showError(description, in: self)
+        }
+
     }
 
     // MARK: Navigation

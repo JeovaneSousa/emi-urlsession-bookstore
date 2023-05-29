@@ -7,7 +7,8 @@
 
 import Foundation
 
-struct Autor {
+struct Autor: Decodable {
+    let id: Int?
     let fotoURI: String
     let nome: String
     let sobrenome: String
@@ -24,6 +25,15 @@ struct Autor {
         self.sobrenome = sobrenome
         self.bio = bio
         self.tecnologias = tecnologias
+        self.id = nil
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case bio, id
+        case fotoURI = "profilePicturePath"
+        case nome = "firstName"
+        case sobrenome = "lastName"
+        case tecnologias = "technologiesSHeWritesAbout"
     }
 }
 

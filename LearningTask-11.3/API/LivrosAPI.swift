@@ -8,7 +8,66 @@
 import Foundation
 
 class LivrosAPI {
+    var dataTask: URLSessionDataTask?
+    var session: URLSession?
+    var decoder: JSONDecoder?
     
+    init(session: URLSession = .shared, decoder: JSONDecoder = JSONDecoder()) {
+        self.session = session
+        self.decoder = decoder
+    }
+    
+    func getBooks(by autor: Autor, completionHandler: @escaping ([Livro]) -> Void,
+                                failureHandler: @escaping (AutoresAPI.Error) -> Void) {
+        
+        guard let id = autor.id else {return}
+        
+        let uri = URL(string: "https://casadocodigo-api.herokuapp.com/api/author/\(id)/books")!
+        
+        dataTask?.cancel()
+        dataTask = session?.dataTask(with: uri, completionHandler: { [weak self] data, response, error in
+            
+            defer {
+                self?.dataTask = nil
+            }
+            
+            if let error = error {
+                DispatchQueue.main.async {
+                    failureHandler(.requestFailed(error))
+                    return
+                }
+            }
+            
+            guard let data = data,
+                  let response = response as? HTTPURLResponse,
+                  response.statusCode == 200 else {
+                DispatchQueue.main.async {
+                    failureHandler(.failedToFetch)
+                }
+                return
+            }
+            
+            do {
+                guard let self = self else {return}
+                
+                let response = try self.decoder?.decode([Livro].self, from: data)
+                
+                DispatchQueue.main.async {
+                    guard let response = response else {return}
+                    
+                    completionHandler(response)
+                }
+                
+            } catch {
+                DispatchQueue.main.async {
+                    print(error)
+                    failureHandler(.invalidData)
+                }
+            }
+    })
+    dataTask?.resume()
+}
+
     func carregaTodos() -> [Livro] {
         return [
             Livro(titulo: "Orientação a Objetos",
@@ -114,65 +173,6 @@ class LivrosAPI {
                                nome: "Matheus", sobrenome: "Brandino",
                                bio: "Tem lugares que me lembram minha vida, por onde andei. As histórias, os caminhos, o destino que eu mudei... Cenas do meu filme em branco e preto que o vento levou e o tempo traz.",
                                tecnologias: ["Java", "Kotlin", "Android", "Flutter"]),
-                  precos: [
-                     Preco(valor: 19.9, tipoDeLivro: .ebook),
-                     Preco(valor: 29.9, tipoDeLivro: .impresso),
-                     Preco(valor: 39.9, tipoDeLivro: .combo),
-                  ]),
-        ]
-    }
-    
-    func carregaLivros(por autor: Autor) -> [Livro] {
-        return [
-            Livro(titulo: "Orientação a Objetos",
-                  subtitulo: "Aprenda seus conceitos e suas aplicabilidades de forma efetiva",
-                  imagemDeCapaURI: "https:s3.xpto.oo.jpeg",
-                  autor: autor,
-                  precos: [
-                     Preco(valor: 19.9, tipoDeLivro: .ebook),
-                     Preco(valor: 29.9, tipoDeLivro: .impresso),
-                     Preco(valor: 39.9, tipoDeLivro: .combo),
-                  ]),
-            Livro(titulo: "ECMAScript 6",
-                  subtitulo: "Descubra as novas features desta versão e entre de cabeça no futuro do JavaScript",
-                  imagemDeCapaURI: "https:s3.xpto.ecmascript.jpeg",
-                  autor: autor,
-                  precos: [
-                     Preco(valor: 19.9, tipoDeLivro: .ebook),
-                     Preco(valor: 29.9, tipoDeLivro: .impresso),
-                     Preco(valor: 39.9, tipoDeLivro: .combo),
-                  ]),
-            Livro(titulo: "React Native",
-                  subtitulo: "Desenvolvimento de aplicativos mobile com React",
-                  imagemDeCapaURI: "https:s3.xpto.reactNative.jpeg",
-                  autor: autor,
-                  precos: [
-                     Preco(valor: 19.9, tipoDeLivro: .ebook),
-                     Preco(valor: 29.9, tipoDeLivro: .impresso),
-                     Preco(valor: 39.9, tipoDeLivro: .combo),
-                  ]),
-            Livro(titulo: "Orientação a Objetos e SOLID para Ninjas",
-                  subtitulo: "Projetando classes flexíveis",
-                  imagemDeCapaURI: "https:s3.xpto.ooSolid.jpeg",
-                  autor: autor,
-                  precos: [
-                     Preco(valor: 19.9, tipoDeLivro: .ebook),
-                     Preco(valor: 29.9, tipoDeLivro: .impresso),
-                     Preco(valor: 39.9, tipoDeLivro: .combo),
-                  ]),
-            Livro(titulo: "Play Framework",
-                  subtitulo: "Java para web sem Servlets e com diversão",
-                  imagemDeCapaURI: "https:s3.xpto.play.jpeg",
-                  autor: autor,
-                  precos: [
-                     Preco(valor: 19.9, tipoDeLivro: .ebook),
-                     Preco(valor: 29.9, tipoDeLivro: .impresso),
-                     Preco(valor: 39.9, tipoDeLivro: .combo),
-                  ]),
-            Livro(titulo: "Spring MVC",
-                  subtitulo: "Domine o principal framework web Java",
-                  imagemDeCapaURI: "https:s3.xpto.spring.jpeg",
-                  autor: autor,
                   precos: [
                      Preco(valor: 19.9, tipoDeLivro: .ebook),
                      Preco(valor: 29.9, tipoDeLivro: .impresso),

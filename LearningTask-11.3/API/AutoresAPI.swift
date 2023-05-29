@@ -1,10 +1,3 @@
-//
-//  AutoresAPI.swift
-//  LearningTask-11.3
-//
-//  Created by rafael.rollo on 03/08/2022.
-//
-
 import Foundation
 
 /**
@@ -13,47 +6,83 @@ import Foundation
  Integrações com serviços HTTP estão fora do escopo da atividade atual e será tema mais a frente
  */
 class AutoresAPI {
-
-    func listaTodos() -> [Autor] {
-        return [
-            Autor(foto: "https:s3.xpto.alberto.jpeg",
-                  nome: "Alberto", sobrenome: "Souza",
-                  bio: "Minha vida é andar por esse país pra ver se um dia descanso feliz, guardando as recordações das terras onde passei andando pelos sertões e dos amigos que lá deixei. Chuva e sol, poeira e carvão, longe de casa sigo o roteiro mais uma estação. E alegria no coração!",
-                  tecnologias: ["Java", "Spring", "Spring Cloud", "Play", "Block Chain"]),
-            Autor(foto: "https:s3.xpto.paula.jpeg",
-                  nome: "Paula", sobrenome: "Santana",
-                  bio: "Eu gosto de artes marciais, sou graduada em Judô e Kickboxing. Adoro participar de comunidades de tecnologia especialmente voltadas para minorias. Sou apaixonada por viajar, gosto de praia e surf. Sou Eclética em música, adoro Queen e Emicida.",
-                  tecnologias: ["Java", "Spring", "Kotlin", "Micronaut"]),
-            Autor(foto: "https:s3.xpto.rollo.jpeg",
-                  nome: "Rafael", sobrenome: "Rollo",
-                  bio: "Um desenvolvedor que adora o que faz tanto quanto a música e o futebol e admira qualquer outra manifestação através da qual pessoas apaixonadas expressam sua essência.",
-                  tecnologias: ["Swift", "iOS", "React Native", "Java", "Spring"]),
-            Autor(foto: "https:s3.xpto.ponte.jpeg",
-                  nome: "Rafael", sobrenome: "Ponte",
-                  bio: "Príncipe do Oceano, Marajá dos Legados e Rei das Gambiarras; Engenheiro de software cansado e crossfiteiro com 5 gatos. Também um podcaster frustrado no @devscansados.",
-                  tecnologias: ["Java", "Spring", "Hibernate", "Kotlin", "Micronaut"]),
-            Autor(foto: "https:s3.xpto.yuri.jpeg",
-                  nome: "Yuri", sobrenome: "Matheus",
-                  bio: "Eu sou apenas um rapaz latino-americano, sem dinheiro no banco, sem parentes importantes, e vindo do interior. Mas trago de cabeça uma canção do rádio em que um antigo compositor baiano me dizia: Tudo é divino tudo é maravilhoso!",
-                  tecnologias: ["Java", "Spring", "Kotlin", "Micronaut"]),
-            Autor(foto: "https:s3.xpto.lucas.jpeg",
-                  nome: "Lucas", sobrenome: "Félix",
-                  bio: "Prepare o seu coração pras coisas que eu vou contar. Eu venho lá do sertão e posso não lhe agradar. Aprendi a dizer não, ver a morte sem chorar. E a morte, o destino, tudo. Estava fora do lugar e eu vivo pra consertar.",
-                  tecnologias: ["Java", "Spring", "Kotlin", "Micronaut"]),
-            Autor(foto: "https:s3.xpto.jordi.jpeg",
-                  nome: "Jordi", sobrenome: "Silva",
-                  bio: "Eu sou terrível, vou lhe dizer, e ponho mesmo, pra derreter. Estou com a razão no que digo, não tenho medo nem do perigo, minha caranga é maquina quente. Eu sou terrível!",
-                  tecnologias: ["Java", "Spring", "Kotlin", "Micronaut"]),
-            Autor(foto: "https:s3.xpto.jackson.jpeg",
-                  nome: "Jackson", sobrenome: "Mota",
-                  bio: "Eu nasci há dez mil anos atrás e não tem nada nesse mundo que eu não saiba demais. Eu vi as velas se acenderem para o Papa, vi Babilônia ser riscada do mapa. Vi conde Drácula sugando o sangue novo e se escondendo atrás da capa.",
-                  tecnologias: ["Java", "Spring", "Kotlin", "Micronaut"]),
-            Autor(foto: "https:s3.xpto.matheus.jpeg",
-                  nome: "Matheus", sobrenome: "Brandino",
-                  bio: "Tem lugares que me lembram minha vida, por onde andei. As histórias, os caminhos, o destino que eu mudei... Cenas do meu filme em branco e preto que o vento levou e o tempo traz.",
-                  tecnologias: ["Java", "Kotlin", "Android", "Flutter"]),
-        ]
+    
+    var session: URLSession?
+    var dataTask: URLSessionDataTask?
+    var decoder: JSONDecoder?
+    
+    var uri: URL = URL(string: "https://casadocodigo-api.herokuapp.com/api/author")!
+    
+    init(session: URLSession? = .shared, decoder: JSONDecoder? = JSONDecoder()) {
+        self.session = session
+        self.decoder = decoder
     }
+    
+    func getAll(fromUrl url: URL, completionHandler: @escaping ([Autor]) -> Void,
+                                failureHandler: @escaping (AutoresAPI.Error) -> Void) {
+        dataTask?.cancel()
+        dataTask = session?.dataTask(with: url, completionHandler: { [weak self] data, response, error in
+            
+            defer {
+                self?.dataTask = nil
+            }
+            
+            //Check for request failure.
+            if let error = error {
+                DispatchQueue.main.async {
+                    failureHandler(Error.requestFailed(error))
+                }
+                return
+            }
+            
+            //Check for server response failure
+            guard let data = data,
+                  let response = response as? HTTPURLResponse,
+                  response.statusCode == 200 else {
+                DispatchQueue.main.async {
+                    failureHandler(Error.failedToFetch)
+                }
+                return
+            }
+            
+            //check for parsing error and invalid data
+            do {
+                guard let self = self else {return}
+                
+                let response = try self.decoder?.decode([Autor].self, from: data)
 
+                DispatchQueue.main.async {
+                    guard let response = response else {return}
+                    
+                    completionHandler(response)
+                }
+                
+            } catch {
+                DispatchQueue.main.async {
+                    failureHandler(.invalidData)
+                }
+            }
+            
+        })
+        dataTask?.resume()
+    }
 }
 
+extension AutoresAPI {
+    enum Error: Swift.Error, LocalizedError{
+        case requestFailed(Swift.Error)
+        case failedToFetch
+        case invalidData
+        
+        var errorDescription: String? {
+            switch self {
+            case .requestFailed(let error):
+                return "Error while processing the request: \(error.localizedDescription)"
+            case .failedToFetch:
+                return "Unable to fetch data from server"
+            case .invalidData:
+                return "Unable to parse. Invalid data returned from server."
+            }
+        }
+    }
+}

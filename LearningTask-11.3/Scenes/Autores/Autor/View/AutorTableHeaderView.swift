@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Kingfisher
 
 class AutorTableHeaderView: UIView {
     
@@ -20,7 +21,7 @@ class AutorTableHeaderView: UIView {
     
         let imageView = UIImageView(frame: .init(origin: .zero, size: tamanhoBase))
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.image = UIImage(named: autor.fotoURI) ?? placeholder
+        imageView.kf.setImage(with: URL(string: autor.fotoURI)!)
         imageView.contentMode = .scaleAspectFit
         imageView.layer.masksToBounds = true
         imageView.layer.cornerRadius = tamanhoBase.width / 2
